@@ -83,12 +83,13 @@ public class C : MonoBehaviour {
             if (chunkGrid[chunkx, chunky].terrain[gridx, gridy].id == 0) {
                 if (playerScript.inv[playerScript.hotbarSel] != null && playerScript.inv[playerScript.hotbarSel].info.stack > 0) {
                     playerScript.inv[playerScript.hotbarSel].info.stack--;
-                    chunkGrid[chunkx, chunky].terrain[gridx, gridy].id = 1;
+                    chunkGrid[chunkx, chunky].terrain[gridx, gridy].id = playerScript.inv[playerScript.hotbarSel].info.itemId;
                     var inst = Instantiate(prefabs[0], new Vector3 (gridx * .32f + chunkx * chunkWidth * .32f, gridy * .32f + chunky * chunkHeight * .32f) , Quaternion.identity);
                     inst.GetComponent<Block>().UpdateItem(playerScript.inv[playerScript.hotbarSel].info.itemId);
                     inst.GetComponent<Block>().xpos = gridx;
                     inst.GetComponent<Block>().ypos = gridy;
-                    inst.transform.parent = chunkGrid[chunkx, chunky].go.transform;
+                    inst.GetComponent<Block>().onPlaced();
+                    //inst.transform.parent = chunkGrid[chunkx, chunky].go.transform;
                     PlaySound(0, .8f);
                     UpdateHotbar();
                 }
@@ -216,38 +217,7 @@ public class C : MonoBehaviour {
             yield return new WaitForSeconds(1f);
         }
     }
-    /*
-    public void UpdateChunks() {
-        currChunkX = (int)(player.position.x / (chunkWidth * .32));
-        currChunkY = (int)(player.position.y / (chunkHeight * .32));
-        List<GameObject> activeChunksToDisable = new List<GameObject>(chunksLoaded);
 
-        for (var i = -1; i < 2; i++) {
-            for (var j = -1; j < 2; j++) {
-                if (chunkGrid[currChunkX + i, currChunkY + j].go != null) {
-                    activeChunksToDisable.Remove(chunkGrid[currChunkX + i, currChunkY + j].go);
-                    if (!chunkGrid[currChunkX + i, currChunkY + j].go.activeSelf) {
-                        chunkGrid[currChunkX + i, currChunkY + j].go.SetActive(true);
-                        chunksLoaded.Add(chunkGrid[currChunkX + i, currChunkY + j].go);
-                    }
-                } else {
-                    BuildTerrain(currChunkX + i, currChunkY + j);
-                }
-            }
-
-        }
-        foreach (GameObject go in activeChunksToDisable) {
-            if (chunksLoaded.Contains(go)) chunksLoaded.Remove(go);
-
-            var first = true;
-            foreach (Transform t in go.transform) {
-                if (first) { first = false; continue; }
-            }
-
-            //go.SetActive(false);
-        }
-    }
-    */
     public void BuildTerrain(int chunkx, int chunky) {
 
         if (chunkGrid[chunkx, chunky].go != null) { //chunk exists
@@ -279,7 +249,7 @@ public class C : MonoBehaviour {
                     inst.transform.parent = chunkGrid[chunkx, chunky].go.transform;
                     inst.GetComponent<Block>().xpos = i;
                     inst.GetComponent<Block>().ypos = j;
-                    inst.GetComponent<Block>().UpdateItem(0);
+                    inst.GetComponent<Block>().UpdateItem(1);
                     chunkGrid[chunkx, chunky].terrain[i, j].id = 1; //flagged as grass/dirt
                     chunkGrid[chunkx, chunky].terrain[i, j].go = inst;
                 }
@@ -336,22 +306,35 @@ public class C : MonoBehaviour {
     }
 
     void InitItemData() {
-        itemData = new ItemStruct[100];
+        itemData = new ItemStruct[200];
         Sprite[] blockSprites = Resources.LoadAll<Sprite>("Sprites/Blocks");
 
-        var i = 0;
+        var i = 1;
 
+        //Blocks
         itemData[i].itemId = i;
         itemData[i].itemName = "Dirt Block";
         itemData[i].sprite = blockSprites[0];
-        itemData[i].sprite = Resources.Load<Sprite>("Sprites/grassTile1");
 
-        i++;
+        i++; //2
 
         itemData[i].itemId = i;
         itemData[i].itemName = "Stone Block";
         itemData[i].sprite = blockSprites[2];
 
-        i++;
+        i++; //3
+
+        itemData[i].itemId = i;
+        itemData[i].itemName = "Chest";
+        itemData[i].sprite = blockSprites[3];
+
+        i++; //4
+
+
+        //Items
+        i = 100;
+
+        
+
     }
 }

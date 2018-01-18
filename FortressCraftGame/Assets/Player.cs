@@ -11,10 +11,12 @@ public class Player : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
         rb = GetComponent<Rigidbody2D>();
-	}
-	
-	// Update is called once per frame
-	void Update () {
+        var inst = Instantiate(C.c.prefabs[0], transform.position + Vector3.up * .5f, Quaternion.identity);
+        inst.GetComponent<Block>().UpdateItem(3);
+    }
+
+    // Update is called once per frame
+    void Update () {
         var vel = rb.velocity;
 		if (Input.GetKey(KeyCode.D)) {
             if (vel.x < 3f) vel.x += .2f;

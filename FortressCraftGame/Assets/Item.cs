@@ -41,37 +41,41 @@ public class Item : MonoBehaviour {
                 if (rb != null) rb.velocity += (Vector2)(target.transform.position - transform.position) * .2f;
                 else rb = GetComponent<Rigidbody2D>();
                 if (Vector3.Distance(target.transform.position,transform.position) < .7f) {
-                    bool success = false;
-                    for(var i = 0; i < 50; i++) { //check for an existing stack
-                        if (C.c.player.GetComponent<Player>().inv[i] != null) {
-                            if (C.c.player.GetComponent<Player>().inv[i].info.itemId == info.itemId) {
-                                C.c.player.GetComponent<Player>().inv[i].info.stack++;
-                                Destroy(gameObject);
-                                success = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (!success) {
-                        for (var i = 0; i < 50; i++) { //then check for an available slot
-                            if (C.c.player.GetComponent<Player>().inv[i] == null) {
-                                C.c.player.GetComponent<Player>().inv[i] = this;
-                                C.c.player.GetComponent<Player>().inv[i].info.stack++;
-                                gameObject.SetActive(false);
-                                success = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (success) {
-                        C.c.UpdateHotbar();
-                        C.c.PlaySound(0, 1.2f);
-                    } 
+                    AddToInventory();
                     break;
                 }
                 yield return null;
             } target = null;
         } 
+    }
+
+    public void AddToInventory() {
+        bool success = false;
+        for (var i = 0; i < 50; i++) { //check for an existing stack
+            if (C.c.player.GetComponent<Player>().inv[i] != null) {
+                if (C.c.player.GetComponent<Player>().inv[i].info.itemId == info.itemId) {
+                    C.c.player.GetComponent<Player>().inv[i].info.stack++;
+                    Destroy(gameObject);
+                    success = true;
+                    break;
+                }
+            }
+        }
+        if (!success) {
+            for (var i = 0; i < 50; i++) { //then check for an available slot
+                if (C.c.player.GetComponent<Player>().inv[i] == null) {
+                    C.c.player.GetComponent<Player>().inv[i] = this;
+                    C.c.player.GetComponent<Player>().inv[i].info.stack++;
+                    gameObject.SetActive(false);
+                    success = true;
+                    break;
+                }
+            }
+        }
+        if (success) {
+            C.c.UpdateHotbar();
+            C.c.PlaySound(0, 1.2f);
+        }
     }
 
 }

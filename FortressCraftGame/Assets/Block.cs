@@ -21,7 +21,7 @@ public class Block : Item {
 
 
     public void SpawnOreAround() {
-        UpdateItem(1);
+        UpdateItem(2);
         if (xpos < 1 || ypos < 1 || xpos > C.c.chunkWidth - 2 || ypos > C.c.chunkHeight - 2) return;
         for (var i = 0; i < 4; i++) {
             if (Random.value < .4f) {
@@ -37,6 +37,30 @@ public class Block : Item {
                     }
                 }
             }
+        }
+    }
+
+    public void onPlaced() {
+        switch (info.itemId) {
+            case 3: StartCoroutine(StorageBlock()); break;
+        }
+    }
+
+    public IEnumerator StorageBlock() {
+        Debug.Log("StorageStarted");
+        while (true) {
+            var colls = Physics2D.OverlapCircleAll(transform.position, .7f, 1 << 0);
+            foreach (Collider2D coll in colls) {
+                var block = coll.GetComponent<Block>();
+                if (block != null) {
+                    if (block == this) continue;
+                    if (!block.attached) {
+                        Item i = block;
+                        StartCoroutine(i.PlayerAttract(transform));
+                    }
+                }
+            }
+            yield return new WaitForSeconds(.5f);
         }
     }
 
