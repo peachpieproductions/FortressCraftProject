@@ -1,6 +1,6 @@
 fileFormatVersion: 2
 guid: 0335ec5839645644c8974a5ef6f2ae50
-timeCreated: 1516221054
+timeCreated: 1516252616
 licenseType: Free
 TextureImporter:
   fileIDToRecycleName:
@@ -8,6 +8,7 @@ TextureImporter:
     21300002: Blocks_1
     21300004: Blocks_2
     21300006: Blocks_3
+    21300008: Blocks_4
   externalObjects: {}
   serializedVersion: 4
   mipmaps:
@@ -128,6 +129,20 @@ TextureImporter:
       rect:
         serializedVersion: 2
         x: 96
+        y: 288
+        width: 32
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: Blocks_4
+      rect:
+        serializedVersion: 2
+        x: 128
         y: 288
         width: 32
         height: 32

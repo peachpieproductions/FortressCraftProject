@@ -23,6 +23,7 @@ public struct TerrainBlock {
 public class C : MonoBehaviour {
 
     public static C c;
+    public static int debugMode = 1;
     public static ItemStruct[] itemData;
     public GameObject[] prefabs;
     //public static int[,] terrainGrid;
@@ -58,11 +59,8 @@ public class C : MonoBehaviour {
         chunkRoot.name = "ChunkRoot";
         currChunkX = 100;
         currChunkY = chunkSurfaceY;
-        for (var i = -chunkStartSpawnRadius; i < chunkStartSpawnRadius; i++) {
-            for (var j = 0; j < chunkStartSpawnRadius; j++) {
-                BuildTerrain(currChunkX + i, chunkSurfaceY - j);
-            }
-        }
+        seed = Random.Range(0, 10000);
+        BuildTerrain(currChunkX, chunkSurfaceY);
 
         //InvokeRepeating("UpdateChunks", .1f, 1f);
         StartCoroutine(UpdateChunks());
@@ -82,14 +80,19 @@ public class C : MonoBehaviour {
             int chunky = Mathf.FloorToInt(pos.y / (chunkHeight * .32f));
             if (chunkGrid[chunkx, chunky].terrain[gridx, gridy].id == 0) {
                 if (playerScript.inv[playerScript.hotbarSel] != null && playerScript.inv[playerScript.hotbarSel].info.stack > 0) {
-                    playerScript.inv[playerScript.hotbarSel].info.stack--;
+                    //playerScript.inv[playerScript.hotbarSel].info.stack--;
                     chunkGrid[chunkx, chunky].terrain[gridx, gridy].id = playerScript.inv[playerScript.hotbarSel].info.itemId;
                     var inst = Instantiate(prefabs[0], new Vector3 (gridx * .32f + chunkx * chunkWidth * .32f, gridy * .32f + chunky * chunkHeight * .32f) , Quaternion.identity);
-                    inst.GetComponent<Block>().UpdateItem(playerScript.inv[playerScript.hotbarSel].info.itemId);
-                    inst.GetComponent<Block>().xpos = gridx;
-                    inst.GetComponent<Block>().ypos = gridy;
-                    inst.GetComponent<Block>().onPlaced();
-                    //inst.transform.parent = chunkGrid[chunkx, chunky].go.transform;
+                    inst.GetComponent<Item>().UpdateItem(playerScript.inv[playerScript.hotbarSel].info.itemId);
+                    chunkGrid[chunkx, chunky].terrain[gridx, gridy].go = inst;
+                    if (inst.GetComponent<Conveyor>() != null) {
+                        inst.GetComponent<Conveyor>().SetBlock(gridx, gridy, chunkx, chunky);
+                        inst.GetComponent<Conveyor>().onPlaced();
+                    } else if (inst.GetComponent<Block>() != null) {
+                        inst.GetComponent<Block>().SetBlock(gridx, gridy, chunkx, chunky);
+                        inst.GetComponent<Block>().onPlaced();
+                    }
+                    inst.transform.parent = chunkGrid[chunkx, chunky].go.transform;
                     PlaySound(0, .8f);
                     UpdateHotbar();
                 }
@@ -99,13 +102,15 @@ public class C : MonoBehaviour {
         //Break Block
         if (Input.GetMouseButton(1)) {
             Vector2 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            var colls = Physics2D.OverlapCircleAll(pos, .7f, 1 << 0);
+            var colls = Physics2D.OverlapCircleAll(pos, .16f, 1 << 0);
             foreach(Collider2D coll in colls) {
                 var block = coll.GetComponent<Block>();
                 if (block != null) {
                     if (block.attached) {
+                        var inst = Instantiate(prefabs[2], block.transform.position, Quaternion.identity); //background block
+                        inst.transform.parent = chunkGrid[block.chunkx, block.chunky].go.transform;
                         var rb = coll.gameObject.AddComponent<Rigidbody2D>();
-                        rb.AddForce(new Vector2(Random.Range(-20, 20), Random.Range(-20, 20)));
+                        rb.AddForce(new Vector2(0, 50));
                         chunkGrid[currChunkX, currChunkY].terrain[block.xpos, block.ypos].id = 0;
                         block.attached = false;
                     }
@@ -175,6 +180,12 @@ public class C : MonoBehaviour {
             UpdateHotbar();
         }
 
+        //Debug mode
+        if (Input.GetKeyDown(KeyCode.F1)) {
+            debugMode++;
+            if (debugMode > 2) debugMode = 0;
+        }
+
     }
 
     public IEnumerator UpdateChunks() {
@@ -233,9 +244,9 @@ public class C : MonoBehaviour {
             chunkGrid[chunkx, chunky].go = GroupNull;
             chunksLoaded.Add(GroupNull);
         }
-        
 
-        seed = Random.Range(0, 10000);
+
+        
         chunkGrid[chunkx, chunky].terrain = new TerrainBlock[chunkWidth, chunkHeight];
 
         var xoffset = chunkx * .32f * chunkWidth;
@@ -245,13 +256,25 @@ public class C : MonoBehaviour {
             for (var i = 0; i < chunkWidth; i++) {
                 var currentHeight = (chunky != chunkSurfaceY) ? chunkHeight : chunkHeight - 20 + Mathf.PerlinNoise(i * .1f + seed, seed) * 10;
                 for (var j = 0; j < currentHeight; j++) {
-                    var inst = Instantiate(prefabs[0], new Vector3(xoffset + i * .32f, yoffset + j * .32f), Quaternion.identity);
-                    inst.transform.parent = chunkGrid[chunkx, chunky].go.transform;
-                    inst.GetComponent<Block>().xpos = i;
-                    inst.GetComponent<Block>().ypos = j;
-                    inst.GetComponent<Block>().UpdateItem(1);
-                    chunkGrid[chunkx, chunky].terrain[i, j].id = 1; //flagged as grass/dirt
-                    chunkGrid[chunkx, chunky].terrain[i, j].go = inst;
+                    var caveNoise = Mathf.PerlinNoise((chunkx * chunkWidth + i + seed + .5f) * .05f, (chunky * chunkHeight + j + seed + .5f) * .05f);
+                    var oreNoise = Mathf.PerlinNoise((chunkx * chunkWidth + i + seed * 2 + .5f) * .05f, (chunky * chunkHeight + j + seed * 2 + .5f) * .05f);
+                    if (caveNoise > .45f || caveNoise < .3f) {
+                        var inst = Instantiate(prefabs[0], new Vector3(xoffset + i * .32f, yoffset + j * .32f), Quaternion.identity);
+                        inst.transform.parent = chunkGrid[chunkx, chunky].go.transform;
+                        inst.GetComponent<Block>().xpos = i;
+                        inst.GetComponent<Block>().ypos = j;
+                        inst.GetComponent<Block>().chunkx = chunkx;
+                        inst.GetComponent<Block>().chunky = chunky;
+                        int genID = 1; //dirt
+                        if (oreNoise < .2f) genID = 2;
+                        inst.GetComponent<Block>().UpdateItem(genID);
+                        if (genID == 1 && chunky == chunkSurfaceY && j == (int)currentHeight) { inst.GetComponent<SpriteRenderer>().sprite = itemData[1].altSprite; } //grass
+                        chunkGrid[chunkx, chunky].terrain[i, j].id = genID; //flagged as grass/dirt
+                        chunkGrid[chunkx, chunky].terrain[i, j].go = inst;
+                    } else {
+                        var inst = Instantiate(prefabs[2], new Vector3(xoffset + i * .32f, yoffset + j * .32f), Quaternion.identity);
+                        inst.transform.parent = chunkGrid[chunkx, chunky].go.transform;
+                    }
                 }
             }
         }
@@ -296,13 +319,42 @@ public class C : MonoBehaviour {
             } 
         }
     }
-
+    
     private void OnGUI() {
-        var i = 0;
-        GUI.Label(new Rect(10, 12 * i, 200, 20), "Debug:"); i++;
-        GUI.Label(new Rect(10, 12 * i, 200, 20), "CurrChunkX: " + currChunkX); i++;
-        GUI.Label(new Rect(10, 12 * i, 200, 20), "CurrChunkY: " + currChunkY); i++;
-        GUI.Label(new Rect(10, 12 * i, 200, 20), "Chunks Loaded: " + chunksLoaded.Count); i++;
+
+        if (debugMode > 0) {
+            var i = 0;
+            GUI.Label(new Rect(10, 12 * i, 200, 20), "Debug:"); i++;
+            GUI.Label(new Rect(10, 12 * i, 200, 20), "CurrChunkX: " + currChunkX); i++;
+            GUI.Label(new Rect(10, 12 * i, 200, 20), "CurrChunkY: " + currChunkY); i++;
+            GUI.Label(new Rect(10, 12 * i, 200, 20), "Chunks Loaded: " + chunksLoaded.Count); i++;
+            GUI.Label(new Rect(10, 12 * i, 200, 20), "Depth: " + (int)((chunkSurfaceY * chunkHeight * .32f - player.transform.position.y) / .32f)); i++;
+
+            if (debugMode > 1) {
+                for (i = 0; i < chunkWidth; i++) {
+                    for (var j = 0; j < chunkHeight; j++) {
+                        Vector3 pos = new Vector3(currChunkX * chunkWidth * .32f + i * .32f - .08f, currChunkY * chunkHeight * .32f - .16f + j * .32f + .32f);
+                        Vector3 screenPos = Camera.main.WorldToScreenPoint(pos);
+                        GUI.Label(new Rect(screenPos.x, Screen.height - screenPos.y, 32, 32), chunkGrid[currChunkX, currChunkY].terrain[i, j].id.ToString());
+                    }
+                }
+            }
+        }
+    }
+
+    private void OnDrawGizmos() {
+        if (debugMode == 2) {
+            Vector3 pos = new Vector3(currChunkX * chunkWidth * .32f - .16f, currChunkY * chunkHeight * .32f - .16f);
+            for (var i = 0; i < chunkHeight + 1; i++) {
+                var voffset = Vector3.up * i * .32f;
+                Gizmos.DrawLine(pos + voffset, pos + Vector3.right * chunkWidth * .32f + voffset);
+            }
+            for (var i = 0; i < chunkWidth + 1; i++) {
+                var hoffset = Vector3.right * i * .32f;
+                Gizmos.DrawLine(pos + hoffset, pos + Vector3.up * chunkHeight * .32f + hoffset);
+            }
+        }
+
     }
 
     void InitItemData() {
@@ -315,6 +367,7 @@ public class C : MonoBehaviour {
         itemData[i].itemId = i;
         itemData[i].itemName = "Dirt Block";
         itemData[i].sprite = blockSprites[0];
+        itemData[i].altSprite = blockSprites[1];
 
         i++; //2
 
@@ -329,6 +382,13 @@ public class C : MonoBehaviour {
         itemData[i].sprite = blockSprites[3];
 
         i++; //4
+
+        itemData[i].itemId = i;
+        itemData[i].itemName = "Conveyor Belt";
+        itemData[i].sprite = blockSprites[4];
+        itemData[i].script = typeof(Conveyor);
+
+        i++; //5
 
 
         //Items

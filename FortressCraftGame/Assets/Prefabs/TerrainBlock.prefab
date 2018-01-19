@@ -23,7 +23,7 @@ GameObject:
   - component: {fileID: 61795424826850392}
   - component: {fileID: 114133916237151198}
   m_Layer: 0
-  m_Name: grassTile1
+  m_Name: TerrainBlock
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -84,6 +84,7 @@ MonoBehaviour:
     stack: 0
     mineTime: 0
     sprite: {fileID: 0}
+    altSprite: {fileID: 0}
   spr: {fileID: 0}
 --- !u!212 &212742649886843360
 SpriteRenderer:
