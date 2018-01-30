@@ -1,6 +1,9 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 using UnityEngine.UI;
 
 [System.Serializable]
@@ -319,7 +322,8 @@ public class C : MonoBehaviour {
             } 
         }
     }
-    
+
+#if UNITY_EDITOR
     private void OnGUI() {
 
         if (debugMode > 0) {
@@ -356,6 +360,7 @@ public class C : MonoBehaviour {
         }
 
     }
+#endif
 
     void InitItemData() {
         itemData = new ItemStruct[200];
